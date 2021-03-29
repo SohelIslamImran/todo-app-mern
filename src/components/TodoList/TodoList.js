@@ -59,19 +59,16 @@ const TodoList = () => {
         let updatedTodos = todos.map(todo => {
             if (todo._id === id) {
                 todo.isComplete = !todo.isComplete;
+
+                fetch(`https://todo-app-server-site.herokuapp.com/completedTodo/${id}`, {
+                    method: "PATCH",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(todo)
+                })
             }
             return todo;
         })
-
-        fetch(`https://todo-app-server-site.herokuapp.com/completedTodo/${id}`, {
-            method: "PATCH",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedTodos)
-        })
-            .then(res => res.json())
-            .then(result => {
-                result && setTodos(updatedTodos);
-            })
+        setTodos(updatedTodos)
     }
 
     return (
