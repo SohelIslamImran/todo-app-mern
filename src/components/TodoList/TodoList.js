@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { UserContext } from '../../App';
+import Logout from '../Logout/Logout';
 import Todo from '../Todo/Todo';
 import TodoForm from '../TodoForm/TodoForm';
 
-const TodoList = () => {
+const TodoList = ({ showPopup }) => {
+    const { loggedInUser, setLoggedInUser } = useContext(UserContext);
     const [todos, setTodos] = useState([]);
 
     useEffect(() => {
-        fetch('https://todo-app-server-site.herokuapp.com/todoList')
+        fetch('http://localhost:5000/todoList')
             .then(res => res.json())
-            .then(data => setTodos(data))
+            .then(data => {
+                setTodos(data);
+                setLoggedInUser(data[0]);
+            })
     }, [])
 
     const addTodo = todo => {
@@ -16,13 +22,15 @@ const TodoList = () => {
             return;
         }
 
-        fetch('https://todo-app-server-site.herokuapp.com/addTodo', {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(todo)
-        })
-            .then(res => res.json())
-            .then(data => setTodos([data, ...todos]))
+        loggedInUser.isSignedIn ? (
+            fetch('http://localhost:5000/addTodo', {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...loggedInUser, ...todo })
+            })
+                .then(res => res.json())
+                .then(data => setTodos([data, ...todos]))
+        ) : showPopup(true);
     }
 
     const updateTodo = (todoId, newValue) => {
@@ -32,7 +40,7 @@ const TodoList = () => {
 
         const updatedTodo = { text: newValue.text };
 
-        fetch(`https://todo-app-server-site.herokuapp.com/update/${todoId}`, {
+        fetch(`http://localhost:5000/update/${todoId}`, {
             method: "PATCH",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedTodo)
@@ -46,7 +54,7 @@ const TodoList = () => {
     const removeTodo = id => {
         const removedArr = [...todos].filter(todo => todo._id !== id);
 
-        fetch(`https://todo-app-server-site.herokuapp.com/delete/${id}`, {
+        fetch(`http://localhost:5000/delete/${id}`, {
             method: "DELETE"
         })
             .then(res => res.json())
@@ -60,7 +68,7 @@ const TodoList = () => {
             if (todo._id === id) {
                 todo.isComplete = !todo.isComplete;
 
-                fetch(`https://todo-app-server-site.herokuapp.com/completedTodo/${id}`, {
+                fetch(`http://localhost:5000/completedTodo/${id}`, {
                     method: "PATCH",
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(todo)
@@ -73,7 +81,10 @@ const TodoList = () => {
 
     return (
         <>
-            <h1>What's the Plan for Today?</h1>
+            <div>
+                <Logout todos={todos} />
+                <h1>What's the Plan for Today?</h1>
+            </div>
             <TodoForm onSubmit={addTodo} />
             <Todo todos={todos}
                 completeTodo={completeTodo}
